@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Bangalore House Price Prediction</title>
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+
+    <!-- Custom JS -->
+    <script type="text/javascript">
+        $(window).on('load', function() {
+            $.get("{{ url_for('get_location_names') }}", function (data) {
+                let uiLocations = $('#uiLocations');
+                uiLocations.empty();
+                data.locations.forEach(loc => uiLocations.append(new Option(loc)));
+            });
+
+            $.get("{{ url_for('get_area_names') }}", function (data) {
+                let uiArea = $('#uiAreas');
+                uiArea.empty();
+                data.area.forEach(a => uiArea.append(new Option(a)));
+            });
+
+            $.get("{{ url_for('get_availability_names') }}", function (data) {
+                let uiAvailability = $('#uiAvailability');
+                uiAvailability.empty();
+                data.availability.forEach(a => uiAvailability.append(new Option(a)));
+            });
+        });
+    </script>
+
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f1f4f8;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        nav.navbar {
+            background-color: #2d3e50;
+        }
+
+        h1 {
+            color: #2d3e50;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 12px;
+        }
+
+        .card-title {
+            color: #0f3057;
+            font-weight: 500;
+        }
+
+        .btn-secondary {
+            background-color: #0f3057;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #005f73;
+            transform: scale(1.05);
+        }
+
+        .form-section {
+            margin-top: 40px;
+        }
+
+        .icon-bar {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        .icon-bar a {
+            display: block;
+            padding: 12px;
+            color: white;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .linkedin { background: #007bb5; }
+        .github { background: #000; }
+
+        .icon-bar a:hover {
+            opacity: 0.8;
+        }
+
+        footer {
+            margin-top: 60px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark">
+        <span class="navbar-brand mb-0 h1 mx-auto">🏡 Bangalore House Price Prediction</span>
+    </nav>
+
+    <div class="icon-bar">
+        <a href="https://www.linkedin.com/in/riteshnitrkl/" target="_blank" class="linkedin"><i class="fa fa-linkedin"></i></a>
+        <a href="https://github.com/riteshnitrkl" target="_blank" class="github"><i class="fa fa-github"></i></a>
+    </div>
+
+    <div class="container form-section">
+        <form action="{{ url_for('predict') }}" method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Location</h5>
+                            <select class="form-control" name="loc" id="uiLocations"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Area</h5>
+                            <select class="form-control" name="area" id="uiAreas"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Availability</h5>
+                            <select class="form-control" name="avail" id="uiAvailability"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Square Footage</h5>
+                            <input type="text" class="form-control" name="sqft" placeholder="e.g. 1200" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">BHK</h5>
+                            <input type="text" class="form-control" name="bhk" placeholder="e.g. 2" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Bathrooms</h5>
+                            <input type="text" class="form-control" name="bath" placeholder="e.g. 2" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-secondary">💰 Estimate Price</button>
+
+            <div class="mt-4">
+                <h3 style="color:#0f3057">{{ prediction_text }}</h3>
+            </div>
+        </form>
+    </div>
+
+    <footer class="text-center">
+        <p>Ritesh Chaurasiya | © 2025</p>
+    </footer>
+</body>
+</html>
