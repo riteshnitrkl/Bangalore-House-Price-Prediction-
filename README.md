@@ -23,5 +23,20 @@ A machine learning web application that predicts house prices in Bangalore based
 
 ---
 
-## 🛠️ Project Structure
+python3 -m venv venv
+source venv/bin/activate  
+
+
+Install dependencies
+
+
+
+pip install flask pandas numpy scikit-learn matplotlib seaborn joblib
+
+
+Run the app
+python3 main.py
+Visit http://127.0.0.1:5000 in your browser.
+
+
 
