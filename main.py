@@ -2,25 +2,31 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 import joblib
+import os
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# Load model and dataset
-model = joblib.load('ridgeModel.pkl')
-df = pd.read_csv('cleaned_bangalore_data.csv')
+# Robust paths (works on Render)
+MODEL_PATH = os.path.join(app.root_path, "ridgeModel.pkl")
+CSV_PATH = os.path.join(app.root_path, "cleaned_bangalore_data.csv")
 
-# Route for homepage
+# Load pipeline/model and dataset
+model = joblib.load(MODEL_PATH)  # saved Pipeline (preprocessor + estimator)
+df = pd.read_csv(CSV_PATH)
+
+# UI lists
+LOCATIONS_UI = sorted(df['location'].unique())
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', prediction_text="")
 
-# API to get unique locations
 @app.route('/get_location_names')
 def get_location_names():
-    locations = sorted(df['location'].unique())
-    return jsonify({'locations': locations})
+    return jsonify({'locations': LOCATIONS_UI})
 
-# Dummy handlers for now (you can remove these if you’re not using 'area' or 'availability')
 @app.route('/get_area_names')
 def get_area_names():
     return jsonify({'area': ['Any']})
@@ -29,33 +35,43 @@ def get_area_names():
 def get_availability_names():
     return jsonify({'availability': ['Ready to move', 'Under Construction']})
 
-# Prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Collect form data
-    location = request.form.get('loc')
-    sqft = float(request.form.get('sqft'))
-    bath = float(request.form.get('bath'))
-    bhk = float(request.form.get('bhk'))
+    try:
+        # read inputs
+        location = request.form.get('loc', '').strip()
+        sqft_raw = request.form.get('sqft', '').strip()
+        bath_raw = request.form.get('bath', '').strip()
+        bhk_raw = request.form.get('bhk', '').strip()
 
-    # For simplicity, we'll do one-hot encoding manually (minimal setup)
-    # Create a zero array with length = number of locations
-    locations = sorted(df['location'].unique())
-    x = np.zeros(len(locations) + 3)  # 3 = sqft, bath, bhk
+        # validate
+        if not sqft_raw or not bath_raw or not bhk_raw or not location:
+            raise ValueError("Please provide values for location, total_sqft, bath and bhk.")
 
-    # Set values
-    x[0] = sqft
-    x[1] = bath
-    x[2] = bhk
+        total_sqft = float(sqft_raw)
+        bath = int(float(bath_raw))
+        bhk = int(float(bhk_raw))
 
-    if location in locations:
-        loc_index = locations.index(location)
-        x[3 + loc_index] = 1
+        # Build a single-row DataFrame with the same raw columns used in training
+        X_input = pd.DataFrame([{
+            'total_sqft': total_sqft,
+            'bath': bath,
+            'bhk': bhk,
+            'location': location
+        }])
 
-    # Predict using ridge model
-    price = model.predict([x])[0]
+        # model is a pipeline: it will perform encoding exactly as training
+        pred = model.predict(X_input)[0]
 
-    return render_template('index.html', prediction_text=f"Estimated Price: ₹ {round(price, 2)} Lakhs")
+        # Format result. Your training target 'price' appears to be in Lakhs (keep consistent)
+        pred_text = f"Estimated Price: ₹ {round(pred, 2)} Lakhs"
 
+    except Exception as e:
+        app.logger.exception("Prediction error")
+        pred_text = f"Error making prediction: {e}"
+
+    return render_template('index.html', prediction_text=pred_text)
+
+# In production Gunicorn will import the app
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(port=5001)
